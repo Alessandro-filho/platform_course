@@ -3,11 +3,33 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "main.js",
+  "build": {
+    "appId": "com.alessandroivos.plarformcourse",
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*",
+      "../app.py",
+      "package.json",
+      "src/**/*"
+    ],
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron": "electron .",
+    "electron-build": "npm run build && electron-builder"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.1.2",
@@ -45,6 +67,9 @@
     "@typescript-eslint/parser": "^7.0.2",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",
+    "electron": "^29.0.1",
+    "electron-builder": "^24.12.0",
+    "electron-is-dev": "^3.0.1",
     "eslint": "^8.56.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",

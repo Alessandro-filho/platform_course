@@ -13,8 +13,16 @@ import { useEffect, useState } from 'react';
 import { toast, Toaster } from "sonner"
 import semImagem from '../public/sem-foto.png'
 
+interface Course {
+  id: string;
+  name: string;
+  isCoverUrl: '0' | '1';
+  urlCover?: string;
+  fileCover?: string;
+}
+
 function App() {
-  const [courses, setCourses] = useState([]);
+  const [courses, setCourses] = useState<Course[]>([]);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -33,7 +41,7 @@ function App() {
   }, []);
   let navigate = useNavigate();
 
-  function handlePlayButtonClick(courseId) {
+  function handlePlayButtonClick(courseId: number) {
     navigate(`/course/${courseId}`);
   }
 
@@ -60,7 +68,7 @@ function App() {
                   />
                 </CardContent>
                 <CardFooter className="flex justify-end">
-                  <Button onClick={() => handlePlayButtonClick(course.id)}>Play</Button>
+                  <Button onClick={() => handlePlayButtonClick(Number(course.id))}>Play</Button>
                 </CardFooter>
               </Card>
             ))}

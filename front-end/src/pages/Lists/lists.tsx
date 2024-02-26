@@ -38,33 +38,44 @@ import {
 import semImagem from '../../../public/sem-foto.png'
 import { Progress } from "@/components/ui/progress"
 
-export default function lists() {
-  const [courseName, setCourseName] = useState('');
-  const [imageURL, setImageURL] = useState('');
-  const [coursePath, setCoursePath] = useState('');
-  const fileInputRef = useRef(null);
-  const fileInputRefEdit = useRef(null);
-  const [courses, setCourses] = useState([]);
-  const [idToDelete, setIdToDelete] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentCourse, setCurrentCourse] = useState(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+type Course = {
+  id: number;
+  name: string;
+  path: string;
+  urlCover?: string;
+  fileCover?: string;
+  isCoverUrl?: string;
+};
 
-  const handleEdit = (course) => {
-    console.log(course)
+export default function lists() {
+  const [courseName, setCourseName] = useState<string>('');
+  const [imageURL, setImageURL] = useState<string>('');
+  const [coursePath, setCoursePath] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRefEdit = useRef<HTMLInputElement>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [idToDelete, setIdToDelete] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const handleEdit = (course: Course) => {
     setCurrentCourse(course);
     setIsEditing(true);
+    isEditing
   };
 
   const handleSubmitEdit = async () => {
+    if (!currentCourse) {
+      return;
+    }
+    setIsLoading(true);
     const formData = new FormData();
 
     formData.append('name', currentCourse.name);
     formData.append('path', currentCourse.path);
 
-    if (fileInputRefEdit.current?.files[0]) {
+    if (fileInputRefEdit.current && fileInputRefEdit.current.files && fileInputRefEdit.current.files[0]) {
       formData.append('imageFile', fileInputRefEdit.current.files[0]);
     } else if (currentCourse.urlCover) {
       formData.append('imageURL', currentCourse.urlCover);
@@ -101,11 +112,11 @@ export default function lists() {
     }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: number) => {
     setIdToDelete(id);
   };
 
-  const confirmDelete = async (id) => {
+  const confirmDelete = async (id: number) => {
     try {
       const response = await fetch(`/api/courses/${id}`, {
         method: 'DELETE',
@@ -139,7 +150,6 @@ export default function lists() {
     }
   };
 
-
   const handleSubmit = async () => {
     setIsLoading(true);
     const formData = new FormData();
@@ -147,7 +157,7 @@ export default function lists() {
     formData.append('name', courseName);
     formData.append('path', coursePath);
 
-    if (fileInputRef.current?.files[0]) {
+    if (fileInputRef.current && fileInputRef.current.files && fileInputRef.current.files[0]) {
       formData.append('imageFile', fileInputRef.current.files[0]);
     } else if (imageURL) {
       formData.append('imageURL', imageURL);
@@ -174,7 +184,7 @@ export default function lists() {
           onClick: () => { },
         },
       });
-      setIsDialogOpen(false);
+
     } catch (error) {
       toast.error('Erro ao adicionar registro.', {
         duration: 2000, action: {
@@ -187,12 +197,12 @@ export default function lists() {
     }
   };
 
-  const handleInputChange = (event) => {
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setCurrentCourse(prev => ({
       ...prev,
       [name]: value,
-    }));
+    }) as Course);
   };
 
   useEffect(() => {
@@ -214,6 +224,14 @@ export default function lists() {
   return (
     <>
       <div className='mt-20 w-full'>
+        {isLoading && <div className='flex justify-center'>
+          <Card className='w-1/2 absolute top-1/2'>
+            <CardContent className='flex justify-center items-center p-10'>
+              <Progress fill='#45eaef' className="w-1/2 h-5 z-99999999" />
+            </CardContent>
+          </Card>
+        </div>
+        }
         <h1 className='text-[3.5em] text-[hsl(222.2,84%,4.9%)] dark:text-white'>Qual iremos cadastrar?</h1>
         <div className='mt-10 flex flex-wrap gap-4 w-full justify-center'>
           <Card className="w-[250px]">
@@ -396,7 +414,6 @@ export default function lists() {
         </div>
       </div>
       <Toaster position="bottom-center" richColors expand={false} visibleToasts={3} />
-      {isLoading && <Progress />}
     </>
   )
 }

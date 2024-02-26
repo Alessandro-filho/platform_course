@@ -21,6 +21,6 @@
     },
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*", "types/custom.d.ts"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["src/**/*", "types/**/*"],
+  "references": [{ "path": "tsconfig.node.json" }]
 }

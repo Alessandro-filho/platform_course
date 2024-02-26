@@ -7,16 +7,23 @@ import {
   MediaPlayer,
   MediaProvider,
   Poster,
-  type MediaCanPlayDetail,
-  type MediaCanPlayEvent,
   type MediaPlayerInstance,
   type MediaProviderAdapter,
-  type MediaProviderChangeEvent,
 } from '@vidstack/react';
 
 import { VideoLayout } from './components/layouts/video-layout';
 
-export function Player({ src, title, isEnding, lessonId, onTimeUpdate, onPlay, timeElapsed }) {
+interface PlayerProps {
+  src: string;
+  title: string;
+  isEnding: (lessonId: number, isEnding: boolean) => void;
+  lessonId: number;
+  onTimeUpdate?: (currentTime: number) => void;
+  onPlay?: () => void;
+  timeElapsed: number;
+}
+
+export function Player({ src, title, isEnding, lessonId, onTimeUpdate, onPlay, timeElapsed }: PlayerProps) {
   const [isEndingTriggered, setIsEndingTriggered] = useState(false);
   let player = useRef<MediaPlayerInstance>(null);
 
@@ -27,32 +34,36 @@ export function Player({ src, title, isEnding, lessonId, onTimeUpdate, onPlay, t
   };
 
   useEffect(() => {
-    return player.current!.subscribe(({ currentTime, duration }) => {
-      onTimeUpdate(currentTime);
-      let timeSub = duration - currentTime;
-      if (timeSub <= 10 && !isEndingTriggered && currentTime > 10) {
-        setIsEndingTriggered(true);
-        if (isEnding) {
-          isEnding(lessonId, true);
+    if (player.current) {
+      return player.current.subscribe(({ currentTime, duration }) => {
+        if (onTimeUpdate) {
+          onTimeUpdate(currentTime);
         }
-      } else if (timeSub > 10) {
-        setIsEndingTriggered(false);
-      }
-    });
-  }, [isEnding, isEndingTriggered, lessonId, onTimeUpdate]);
-
-  useEffect(() => {
-    if (src) {
-      return player.current!.subscribe(({ paused, viewType }) => {
-        // console.log('is paused?', '->', state.paused);
-        // console.log('is audio view?', '->', state.viewType === 'audio');
+        let timeSub = duration - currentTime;
+        if (timeSub <= 10 && !isEndingTriggered && currentTime > 10) {
+          setIsEndingTriggered(true);
+          if (isEnding) {
+            isEnding(lessonId, true);
+          }
+        } else if (timeSub > 10) {
+          setIsEndingTriggered(false);
+        }
       });
     }
-  }, [src]);
+  }, [isEnding, isEndingTriggered, lessonId, onTimeUpdate]);
+
+  // useEffect(() => {
+  //   if (src) {
+  //     return player.current!.subscribe(({ paused, viewType }) => {
+  //       // console.log('is paused?', '->', state.paused);
+  //       // console.log('is audio view?', '->', state.viewType === 'audio');
+  //     });
+  //   }
+  // }, [src]);
 
   function onProviderChange(
     provider: MediaProviderAdapter | null,
-    nativeEvent: MediaProviderChangeEvent,
+    // nativeEvent: MediaProviderChangeEvent,
   ) {
     // We can configure provider's here.
     if (isHLSProvider(provider)) {
@@ -61,7 +72,7 @@ export function Player({ src, title, isEnding, lessonId, onTimeUpdate, onPlay, t
   }
 
   // We can listen for the `can-play` event to be notified when the player is ready.
-  function onCanPlay(detail: MediaCanPlayDetail, nativeEvent: MediaCanPlayEvent) {
+  function onCanPlay() {
     // ...
   }
 

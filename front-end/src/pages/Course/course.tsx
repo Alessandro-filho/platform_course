@@ -16,32 +16,59 @@ import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { toast, Toaster } from "sonner";
 
+interface TxtFile {
+  name: string;
+  content: string;
+}
+
+interface Lesson {
+  id: number;
+  module: string;
+  progressStatus: string;
+  hierarchy_path: string;
+  course_title: string;
+  isCompleted: number;
+  title: string;
+  video_url: string;
+  time_elapsed?: number;
+  duration: string;
+}
+
+interface Hierarchy {
+  [key: string]: Hierarchy | Lesson[];
+}
+
+interface FileObject {
+  url: string;
+  name: string;
+}
+
 export default function course() {
-  const { courseId } = useParams();
-  const [lessons, setLessons] = useState([]);
+  const { courseId } = useParams<{ courseId: string }>();
+  const [lessons, setLessons] = useState<Record<string, Lesson[]>>({});
   const [videoInfo, setVideoInfo] = useState({ title: '', url: '', videoId: '', timeElapsed: '', progressStatus: '' });
-  const [watchedLessons, setWatchedLessons] = useState({});
-  const [selectedLessonId, setSelectedLessonId] = useState(null);
+  const [watchedLessons, setWatchedLessons] = useState<Record<number, boolean>>({});
+  const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
   const [lastTimeUpdated, setLastTimeUpdated] = useState(0);
-  const [txtContent, setTxtContent] = useState([]);
-  const [filesPath, setFilesPath] = useState([]);
-  const [modules, setModules] = useState({});
+  const [txtContent, setTxtContent] = useState<TxtFile[]>([]);
+  const [filesPath, setFilesPath] = useState<FileObject[]>([]);
+  const [modules, setModules] = useState<Record<string, any>>({});
   const [courseName, setCourseName] = useState('');
 
-  function formatarDuracao(segundos) {
+  function formatarDuracao(segundos: number) {
     const minutos = Math.floor(segundos / 60);
     const segundosRestantes = Math.floor(segundos % 60);
     const paddedSegundos = String(segundosRestantes).padStart(2, '0');
     return `${minutos}:${paddedSegundos}`;
   }
 
-  const fetchTxtContent = async (url) => {
+  const fetchTxtContent = async (url: string) => {
     try {
       const response = await fetch(`/serve-txt/?video_path=${encodeURIComponent(url)}`);
       if (!response.ok) {
         throw new Error('Erro ao buscar arquivos .txt');
       }
-      const data = await response.json();
+      const data: { [key: string]: TxtFile } = await response.json();
       const arquivosTxt = Object.values(data) || [];
       setTxtContent(arquivosTxt);
     } catch (error) {
@@ -49,7 +76,7 @@ export default function course() {
     }
   };
 
-  const fetchFiles = async (url) => {
+  const fetchFiles = async (url: string) => {
     try {
       const response = await fetch(`/serve-files/?video_path=${encodeURIComponent(url)}`);
       if (!response.ok) {
@@ -62,7 +89,7 @@ export default function course() {
     }
   };
 
-  const handleTimeEnding = (lessonId, value) => {
+  const handleTimeEnding = (lessonId: number, value: boolean) => {
     if (value && lessonId) {
       const requestData = {
         lessonId: lessonId,
@@ -88,17 +115,21 @@ export default function course() {
     }
   };
 
-  const updateLessonProgressLocally = (lessonId, progressStatus) => {
+  const updateLessonProgressLocally = (lessonId: number, progressStatus: string) => {
+    lessons
     setLessons((currentLessons) => {
       const updatedModules = { ...currentLessons };
 
-      Object.keys(updatedModules).forEach((module) => {
-        updatedModules[module] = updatedModules[module].map((lesson) => {
-          if (lesson.id === lessonId) {
-            return { ...lesson, progressStatus };
-          }
-          return lesson;
-        });
+      Object.keys(updatedModules).forEach((module: string) => {
+        const lessonArray = updatedModules[module];
+        if (Array.isArray(lessonArray)) {
+          updatedModules[module] = lessonArray.map((lesson: Lesson) => {
+            if (lesson.id === lessonId) {
+              return { ...lesson, progressStatus };
+            }
+            return lesson;
+          });
+        }
       });
 
       return updatedModules;
@@ -107,7 +138,7 @@ export default function course() {
 
   const handlePlay = () => {
     const requestData = {
-      lessonId: videoInfo.videoId,
+      lessonId: Number(videoInfo.videoId),
       progressStatus: 'started',
     };
 
@@ -129,26 +160,28 @@ export default function course() {
           ...prev,
           progressStatus: 'started',
         }));
-        updateLessonProgressLocally(videoInfo.videoId, 'started');
+        updateLessonProgressLocally(Number(videoInfo.videoId), 'started');
       })
       .catch(error => {
         console.error('Erro ao atualizar o progresso da lição:', error);
       });
   };
 
-  const calculateModuleProgressStatus = (moduleLessons) => {
-    const allLessons = Object.values(moduleLessons).flat();
-    const progressStatusCounts = { completed: 0, started: 0, not_started: 0 };
+  type ProgressStatus = 'completed' | 'started' | 'not_started';
 
-    allLessons.forEach((lesson) => {
-      progressStatusCounts[lesson.progressStatus]++;
+  const calculateModuleProgressStatus = (moduleLessons: Lesson[]) => {
+    const progressStatusCounts: Record<ProgressStatus, number> = { completed: 0, started: 0, not_started: 0 };
+
+    moduleLessons.forEach((lesson) => {
+      const status: ProgressStatus = lesson.progressStatus as ProgressStatus;
+      progressStatusCounts[status]++;
     });
 
-    if (progressStatusCounts.completed === allLessons.length) {
+    if (progressStatusCounts.completed === moduleLessons.length) {
       return 'completed';
     }
 
-    let mostCommonStatus = 'not_started';
+    let mostCommonStatus: ProgressStatus = 'not_started';
     if (progressStatusCounts.started > progressStatusCounts[mostCommonStatus]) {
       mostCommonStatus = 'started';
     }
@@ -159,7 +192,7 @@ export default function course() {
     return mostCommonStatus;
   };
 
-  const handleLessonWatchToggle = (lessonId) => {
+  const handleLessonWatchToggle = (lessonId: number) => {
     setWatchedLessons((prev) => {
       const isCompleted = !prev[lessonId];
       const progressStatus = isCompleted ? "completed" : "started";
@@ -184,14 +217,14 @@ export default function course() {
     });
   };
 
-  const calculateModuleProgress = (moduleLessons) => {
+  const calculateModuleProgress = (moduleLessons: Lesson[]) => {
     const allLessons = Object.values(moduleLessons).flat();
     const total = allLessons.length;
     const watched = allLessons.filter((lesson) => watchedLessons[lesson.id]).length;
     return Number(((watched / total) * 100).toFixed(2));
   };
 
-  const handleTimeUpdate = (lessonId, currentTime) => {
+  const handleTimeUpdate = (lessonId: number, currentTime: number) => {
     if (Math.abs(lastTimeUpdated - currentTime) > 60) {
       setLastTimeUpdated(currentTime);
 
@@ -222,7 +255,7 @@ export default function course() {
     }
   };
 
-  const handleLinkClick = (path) => {
+  const handleLinkClick = (path: string) => {
     navigator.clipboard.writeText(path)
       .then(() => {
         toast.error('Sem permissão para abrir diretórios direto do navegador. O caminho foi copiado para a área de transferência.', {
@@ -240,13 +273,12 @@ export default function course() {
       });
   };
 
-  function organizeLessonsInHierarchy(lessons) {
+  function organizeLessonsInHierarchy(lessons: Lesson[]) {
     const hierarchy = {};
 
     lessons.forEach((lesson) => {
-
       const pathParts = lesson.hierarchy_path.split('/');
-      let currentLevel = hierarchy;
+      let currentLevel: any = hierarchy;
 
       pathParts.forEach((part, index) => {
         if (!currentLevel[part]) {
@@ -261,12 +293,26 @@ export default function course() {
     return hierarchy;
   }
 
+  const flattenHierarchy = (hierarchy: Hierarchy): Lesson[] => {
+    const lessons: Lesson[] = [];
+
+    Object.values(hierarchy).forEach((item) => {
+      if (Array.isArray(item)) {
+        lessons.push(...item);
+      } else {
+        lessons.push(...flattenHierarchy(item));
+      }
+    });
+
+    return lessons;
+  };
+
   useEffect(() => {
     const fetchLessons = async () => {
       try {
         const response = await fetch(`/api/courses/${courseId}/lessons`);
         if (!response.ok) throw new Error('Erro ao buscar aulas');
-        const lessons = await response.json();
+        const lessons: Lesson[] = await response.json();
         setCourseName(lessons[0].course_title);
 
         if (lessons && lessons.length > 0) {
@@ -278,8 +324,8 @@ export default function course() {
             setVideoInfo({
               title: firstLesson.title,
               url: `/serve-video/?video_path=${encodeURIComponent(firstLesson.video_url)}`,
-              videoId: firstLesson.id,
-              timeElapsed: firstLesson.time_elapsed || 0,
+              videoId: firstLesson.id.toString(),
+              timeElapsed: (firstLesson.time_elapsed ?? 0).toString(),
               progressStatus: firstLesson.progressStatus
             });
             setSelectedLessonId(firstLesson.id);
@@ -287,10 +333,10 @@ export default function course() {
             fetchFiles(firstLesson.video_url);
           }
 
-          const watchedLessonsUpdate = lessons.reduce((acc, lesson) => {
+          const watchedLessonsUpdate: Record<number, boolean> = lessons.reduce((acc, lesson) => {
             acc[lesson.id] = !!lesson.isCompleted;
             return acc;
-          }, {});
+          }, {} as Record<number, boolean>);
           setWatchedLessons(watchedLessonsUpdate);
         } else {
           console.error('Resposta do servidor vazia ou sem dados');
@@ -303,31 +349,47 @@ export default function course() {
     fetchLessons();
   }, [courseId]);
 
-  function findFirstLesson(hierarchy) {
+  function findFirstLesson(hierarchy: Hierarchy): Lesson | null {
     for (const key in hierarchy) {
-      if (Array.isArray(hierarchy[key]) && hierarchy[key].length > 0) {
-        return hierarchy[key][0];
+      const item = hierarchy[key];
+      if (Array.isArray(item)) {
+        if (item.length > 0) {
+          return item[0] as Lesson;
+        }
       } else {
-        return findFirstLesson(hierarchy[key]);
+        const lesson = findFirstLesson(item as Hierarchy);
+        if (lesson) {
+          return lesson;
+        }
       }
     }
     return null;
   }
 
-  const renderHierarchy = (hierarchy, level = 0) => {
+  const renderHierarchy = (hierarchy: Hierarchy, level = 0) => {
     const sortedHierarchy = Object.entries(hierarchy).sort((a, b) => {
       const regex = /\d+/g;
-      const aModuleNumber = parseInt(a[0].match(regex)[0]);
-      const bModuleNumber = parseInt(b[0].match(regex)[0]);
+      const matchResultA = a[0].match(regex);
+      const aModuleNumber = matchResultA ? parseInt(matchResultA[0]) : 0;
+
+      const matchResultB = b[0].match(regex);
+      const bModuleNumber = matchResultB ? parseInt(matchResultB[0]) : 0;
+
       return aModuleNumber - bModuleNumber;
     });
 
     return sortedHierarchy.map(([key, value], index) => {
       if (Array.isArray(value)) {
         const sortedLessons = value.sort((a, b) => {
-          const aLessonNumber = parseInt(a.hierarchy_path.match(/\d+/g).pop());
-          const bLessonNumber = parseInt(b.hierarchy_path.match(/\d+/g).pop());
-          return aLessonNumber - bLessonNumber;
+          const matchResultA = a.hierarchy_path.match(/\d+/g);
+          const matchResultB = b.hierarchy_path.match(/\d+/g);
+
+          if (matchResultA && matchResultB) {
+            const aLessonNumber = parseInt(matchResultA.pop()!);
+            const bLessonNumber = parseInt(matchResultB.pop()!);
+            return aLessonNumber - bLessonNumber;
+          }
+          return 0;
         });
 
         return sortedLessons.map((lesson) => (
@@ -335,12 +397,12 @@ export default function course() {
             <p className="w-1/6">{index + 1}</p>
             <p className="w-5/6 cursor-pointer flex flex-col" onClick={() => {
               setVideoInfo({
-                title: lesson.title, url: `/serve-video/?video_path=${encodeURIComponent(lesson.video_url)}`, videoId: lesson.id,
-                timeElapsed: lesson.time_elapsed || 0,
+                title: lesson.title, url: `/serve-video/?video_path=${encodeURIComponent(lesson.video_url)}`, videoId: lesson.id.toString(),
+                timeElapsed: lesson.time_elapsed?.toString() || '0',
                 progressStatus: lesson.progressStatus
               });
               setSelectedLessonId(lesson.id);
-            }}>{lesson.title} <span>{formatarDuracao(lesson.duration)}</span></p>
+            }}>{lesson.title} <span>{formatarDuracao(Number(lesson.duration))}</span></p>
             <div className="w-1/6">
               <Checkbox
                 checked={!!watchedLessons[lesson.id]}
@@ -350,14 +412,20 @@ export default function course() {
           </div>
         ));
       } else {
-        const moduleProgress = calculateModuleProgress(value);
-        const progressStatusModule = calculateModuleProgressStatus(value);
-        const hasStartedLessons = Object.values(value).some(moduleLessons =>
-          moduleLessons.some(lesson => lesson.progressStatus === 'started')
+        const moduleProgress = calculateModuleProgress(flattenHierarchy(value));
+        const progressStatusModule = calculateModuleProgressStatus(flattenHierarchy(value));
+        const hasStartedLessons = Object.values(value).some((moduleLessons: any) =>
+          moduleLessons.some((lesson: Lesson) => lesson.progressStatus === 'started')
         );
 
+        console.log("Before rendering child hierarchy:", value);
+
+        const renderedHierarchy = renderHierarchy(value, level + 1);
+
+        console.log("After rendering child hierarchy:", renderedHierarchy);
+
         return (
-          <Accordion key={`module-${level}-${index}`} collapsible>
+          <Accordion type="single" key={`module-${level}-${index}`} collapsible>
             <AccordionItem value={`module-${key}`}>
               <AccordionTrigger className="hover:no-underline">{key}</AccordionTrigger>
               <div className="flex gap-2 justify-start items-center my-4">
@@ -387,7 +455,7 @@ export default function course() {
                 </div>
               </div>
               <AccordionContent>
-                {renderHierarchy(value, level + 1)}
+                {renderedHierarchy}
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -404,9 +472,9 @@ export default function course() {
             <Player
               title={videoInfo.title}
               src={videoInfo.url}
-              isEnding={handleTimeEnding}
-              lessonId={videoInfo.videoId}
-              onTimeUpdate={(currentTime) => handleTimeUpdate(videoInfo.videoId, currentTime)}
+              isEnding={(lessonId) => handleTimeEnding(Number(lessonId), true)}
+              lessonId={Number(videoInfo.videoId)}
+              onTimeUpdate={(currentTime) => handleTimeUpdate(Number(videoInfo.videoId), currentTime)}
               onPlay={handlePlay}
               timeElapsed={parseFloat(videoInfo.timeElapsed)}
             />
@@ -424,7 +492,18 @@ export default function course() {
                     <Separator className="my-4" />
                   </CardHeader>
                   <CardContent>
-                    {txtContent == '' ? <h3>Não há descrição em .txt</h3> : txtContent}
+                    {txtContent.length === 0 ? (
+                      <h3>Não há descrição em .txt</h3>
+                    ) : (
+                      <div>
+                        {txtContent.map((file, index) => (
+                          <div key={index}>
+                            <h3>{file.name}</h3>
+                            <p>{file.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

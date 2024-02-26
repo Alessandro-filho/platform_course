@@ -210,15 +210,20 @@ def update_lesson_for_end_progress():
 def add_course():
     name = request.form['name']
     path = request.form['path']
+    
     isCoverUrl = 1 if 'imageURL' in request.form and request.form['imageURL'] else 0
     urlCover = request.form.get('imageURL', None)
-    image_file = request.files.get('imageFile')
 
-    fileCover = None
-    if image_file and not isCoverUrl:
-        filename = secure_filename(image_file.filename)
-        fileCover = filename
-        image_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    if not isCoverUrl:
+        image_file = request.files.get('imageFile')
+        if image_file:
+            filename = secure_filename(image_file.filename)
+            fileCover = filename
+            image_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        else:
+            fileCover = None
+    else:
+        fileCover = None
 
     course = Course(
         name=name,
@@ -260,6 +265,8 @@ def update_course(course_id):
             course.isCoverUrl = 0
             course.urlCover = None
             image_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        else:
+            course.fileCover = course.fileCover
     print(f"Saving course with file cover: {course.fileCover}")
     db.session.commit()
     list_and_register_lessons(course.path, course_id)
