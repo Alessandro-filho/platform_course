@@ -11,7 +11,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import joinedload
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///videocoursemanager.sqlite?cache=shared'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///platform_course.sqlite?cache=shared'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
 db = SQLAlchemy(app)
