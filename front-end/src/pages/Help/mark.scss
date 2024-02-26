@@ -1,0 +1,104 @@
+.markCss a {
+  color: #4183c4;
+  text-decoration: none;
+}
+
+.markCss a:hover {
+  text-decoration: underline;
+}
+
+.markCss p,
+blockquote,
+ul,
+ol,
+dl,
+table,
+pre {
+  margin: 15px 0;
+}
+
+.markCss ul,
+  ol {
+    padding: 0 1rem;
+  }
+
+  ul {
+    list-style: disc;
+  }
+
+  ol {
+    list-style: decimal;
+  }
+
+.markCss ul,
+ol {
+  padding-left: 30px;
+}
+
+html.dark .markCss h1,h2,h3,h4,h5,h6 {
+	color: #dbcece;
+}
+
+.markCss h1 {
+  font-size: 2em;
+}
+
+.markCss h2 {
+  font-size: 1.5em;
+}
+
+.markCss h3 {
+  font-size: 1.17em;
+}
+
+.markCss h4 {
+  font-size: 1em;
+}
+
+.markCss h5 {
+  font-size: 0.83em;
+}
+
+.markCss h6 {
+  font-size: 0.67em;
+}
+
+.markCss h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: bold;
+  line-height: 1.7;
+  margin: 1em 0 15px 0;
+}
+
+.markCss h1 + p,
+h2 + p,
+h3 + p {
+  margin-top: 10px;
+}
+
+.markCss img {
+  max-width: 100%;
+}
+
+.markCss code,
+pre {
+  background-color: #f8f8f8;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+  font-family: Consolas, "Liberation Mono", Courier, monospace;
+  font-size: 12px;
+  margin: 0 2px;
+  padding: 0 5px;
+  white-space: pre;
+}
+
+.markCss pre code {
+  border: none;
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+}
