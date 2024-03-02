@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, url_for, send_file, abort, send_from_directory
+from flask import Flask, request, jsonify, send_file, abort, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from werkzeug.utils import secure_filename, safe_join
@@ -118,8 +118,8 @@ def serve_txt():
 
     arquivos_txt = {}
     for arquivo in os.listdir(video_dir):
-        if arquivo.endswith(".txt"):
-            with open(os.path.join(video_dir, arquivo), 'r') as f:
+        if arquivo.endswith(".txt") or arquivo.endswith(".html"):
+            with open(os.path.join(video_dir, arquivo), 'r', encoding='utf-8') as f:
                 arquivos_txt[arquivo] = f.read()
 
     return jsonify(arquivos_txt)

@@ -71,6 +71,16 @@ pip install -r requirements.txt
 
 3. Execute a aplicação:
 
+Precisamos primeiro entrar no ambiente virtual
+
+windows(shell/cmd) -> `venv/Scripts/Activate`
+windows(bash) / Mac -> `source venv/Scripts/Activate`
+
+## Nota
+
+Certifique-se de substituir venv pelo nome do seu ambiente virtual, caso seja diferente.
+Para desativar o ambiente virtual, basta executar o comando `deactivate` no terminal em qualquer sistema operacional.
+
 ```shell
 python app.py
 ```
@@ -83,6 +93,14 @@ A aplicação estará acessível em `http://localhost:5000` por padrão.
 - Utilize as funcionalidades fornecidas pela interface web para gerenciar cursos e lições.
 
 PS: Tive uma tentativa frustante de usar o [Electron](https://www.electronjs.org/pt/), mas caso você tenha mais capacidade e paciência do que eu, você vai conseguir.
+
+## Temas
+
+`dark`:
+![tema dark](./front-end/public/dark.png)
+
+`light`:
+![tema light](./front-end/public/light.png)
 
 ## Contribuição
 
