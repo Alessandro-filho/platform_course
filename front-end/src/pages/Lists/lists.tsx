@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -36,7 +36,6 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import semImagem from '../../../public/sem-foto.png'
-import { Progress } from "@/components/ui/progress"
 
 type Course = {
   id: number;
@@ -58,6 +57,7 @@ export default function lists() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleEdit = (course: Course) => {
     setCurrentCourse(course);
@@ -100,6 +100,7 @@ export default function lists() {
           onClick: () => { },
         },
       });
+      
       setIsEditing(false);
     } catch (error) {
       toast.error('Erro ao atualizar o curso.', {
@@ -137,6 +138,7 @@ export default function lists() {
           onClick: () => { },
         },
       });
+      
     } catch (error) {
       toast.error('Erro ao excluir o registro.', {
         duration: 2000,
@@ -151,6 +153,7 @@ export default function lists() {
   };
 
   const handleSubmit = async () => {
+    setIsOpen(false)
     setIsLoading(true);
     const formData = new FormData();
 
@@ -184,7 +187,7 @@ export default function lists() {
           onClick: () => { },
         },
       });
-
+      
     } catch (error) {
       toast.error('Erro ao adicionar registro.', {
         duration: 2000, action: {
@@ -194,6 +197,22 @@ export default function lists() {
       });
     } finally {
       setIsLoading(false);
+      fetchCourses();
+      setCourseName('');
+      setImageURL('');
+      setCoursePath('');
+    }
+  };
+
+  const fetchCourses = async () => {
+    try {
+      const response = await fetch('/api/courses');
+      if (!response.ok) throw new Error('Falha ao buscar cursos');
+
+      const data = await response.json();
+      setCourses(data);
+    } catch (error) {
+      toast.error('Erro ao carregar cursos.');
     }
   };
 
@@ -223,11 +242,12 @@ export default function lists() {
 
   return (
     <>
-      <div className='mt-20 w-full'>
+      <div className='w-full mb-4'>
         {isLoading && <div className='flex justify-center'>
           <Card className='w-1/2 absolute top-1/2'>
             <CardContent className='flex justify-center items-center p-10'>
-              <Progress fill='#45eaef' className="w-1/2 h-5 z-99999999" />
+              <Loader2 className='animate-spin mr-4' />
+              <p>Processando...</p>
             </CardContent>
           </Card>
         </div>
@@ -239,7 +259,7 @@ export default function lists() {
               <CardTitle className='text-[hsl(222.2,84%,4.9%)] dark:text-white'>Cadastrar</CardTitle>
             </CardHeader>
             <CardContent className='flex justify-center'>
-              <Dialog>
+              <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" className='w-32 h-32'>
                     <Plus className="h-[1rem] w-[1rem] rotate-0 scale-100 transition-all" />
@@ -310,8 +330,9 @@ export default function lists() {
         </div>
         <h1 className='text-[3.5em]'>O que já cadastramos...</h1>
         <div className='mt-10 flex flex-wrap gap-4 w-full justify-center'>
-          {Array.isArray(courses) && courses.map((course) => (
-            <Card key={course.id} className="w-[350px]">
+          {Array.isArray(courses) && courses.length > 0 ? (
+          courses.map((course) => (
+            <Card key={course.id} className="w-[350px] mb-12">
               <CardHeader>
                 <CardTitle className='text-start leading-8 text-[hsl(222.2,84%,4.9%)] dark:text-white'>{course.name}</CardTitle>
               </CardHeader>
@@ -410,7 +431,8 @@ export default function lists() {
                 <Button className='bg-red-700 text-cyan-50 hover:bg-red-950 hover:text-white outline-none border-none' variant="outline" onClick={() => handleDelete(course.id)}>Apagar</Button>
               </CardFooter>
             </Card>
-          ))}
+          ))): <p>Não há registros...</p>
+          }
         </div>
       </div>
       <Toaster position="bottom-center" richColors expand={false} visibleToasts={3} />

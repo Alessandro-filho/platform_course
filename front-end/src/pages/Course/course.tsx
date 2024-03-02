@@ -169,27 +169,27 @@ export default function course() {
 
   type ProgressStatus = 'completed' | 'started' | 'not_started';
 
+  const calculateModuleProgress = (moduleLessons: Lesson[]) => {
+    const total = moduleLessons.length;
+    const watched = moduleLessons.filter((lesson) => watchedLessons[lesson.id]).length;
+    return Number(((watched / total) * 100).toFixed(2));
+  };
+
   const calculateModuleProgressStatus = (moduleLessons: Lesson[]) => {
     const progressStatusCounts: Record<ProgressStatus, number> = { completed: 0, started: 0, not_started: 0 };
 
     moduleLessons.forEach((lesson) => {
-      const status: ProgressStatus = lesson.progressStatus as ProgressStatus;
+      const status: ProgressStatus = watchedLessons[lesson.id] ? 'completed' : lesson.progressStatus as ProgressStatus;
       progressStatusCounts[status]++;
     });
 
     if (progressStatusCounts.completed === moduleLessons.length) {
       return 'completed';
+    } else if (progressStatusCounts.started > 0) {
+      return 'started';
+    } else {
+      return 'not_started';
     }
-
-    let mostCommonStatus: ProgressStatus = 'not_started';
-    if (progressStatusCounts.started > progressStatusCounts[mostCommonStatus]) {
-      mostCommonStatus = 'started';
-    }
-    if (progressStatusCounts.completed > progressStatusCounts[mostCommonStatus]) {
-      mostCommonStatus = 'completed';
-    }
-
-    return mostCommonStatus;
   };
 
   const handleLessonWatchToggle = (lessonId: number) => {
@@ -215,13 +215,6 @@ export default function course() {
 
       return { ...prev, [lessonId]: isCompleted };
     });
-  };
-
-  const calculateModuleProgress = (moduleLessons: Lesson[]) => {
-    const allLessons = Object.values(moduleLessons).flat();
-    const total = allLessons.length;
-    const watched = allLessons.filter((lesson) => watchedLessons[lesson.id]).length;
-    return Number(((watched / total) * 100).toFixed(2));
   };
 
   const handleTimeUpdate = (lessonId: number, currentTime: number) => {
@@ -272,26 +265,6 @@ export default function course() {
         });
       });
   };
-
-  function organizeLessonsInHierarchy(lessons: Lesson[]) {
-    const hierarchy = {};
-
-    lessons.forEach((lesson) => {
-      const pathParts = lesson.hierarchy_path.split('/');
-      let currentLevel: any = hierarchy;
-
-      pathParts.forEach((part, index) => {
-        if (!currentLevel[part]) {
-          currentLevel[part] = index === pathParts.length - 1 ? [] : {};
-        }
-        currentLevel = currentLevel[part];
-      });
-
-      currentLevel.push(lesson);
-    });
-
-    return hierarchy;
-  }
 
   const flattenHierarchy = (hierarchy: Hierarchy): Lesson[] => {
     const lessons: Lesson[] = [];
@@ -366,43 +339,115 @@ export default function course() {
     return null;
   }
 
-  const renderHierarchy = (hierarchy: Hierarchy, level = 0) => {
-    const sortedHierarchy = Object.entries(hierarchy).sort((a, b) => {
+  function organizeLessonsInHierarchy(lessons: Lesson[]): Hierarchy {
+    const hierarchy: Hierarchy = {};
+
+    lessons.forEach((lesson) => {
+      const pathParts = lesson.hierarchy_path.split('/');
+      let currentLevel = hierarchy;
+
+      pathParts.forEach((part, index) => {
+        if (index === pathParts.length - 1) {
+          if (!currentLevel[part]) {
+            currentLevel[part] = [];
+          }
+          (currentLevel[part] as Lesson[]).push(lesson);
+        } else {
+          if (!currentLevel[part]) {
+            currentLevel[part] = {};
+          }
+          currentLevel = currentLevel[part] as Hierarchy;
+        }
+      });
+    });
+    return hierarchy;
+  }
+
+  const renderHierarchy = (hierarchy: Hierarchy, level = 0): JSX.Element[] => {
+    const elements: JSX.Element[] = [];
+
+    Object.entries(hierarchy).sort((a, b) => {
       const regex = /\d+/g;
       const matchResultA = a[0].match(regex);
-      const aModuleNumber = matchResultA ? parseInt(matchResultA[0]) : 0;
-
+      const aModuleNumber = matchResultA ? parseInt(matchResultA[0], 10) : 0;
       const matchResultB = b[0].match(regex);
-      const bModuleNumber = matchResultB ? parseInt(matchResultB[0]) : 0;
-
+      const bModuleNumber = matchResultB ? parseInt(matchResultB[0], 10) : 0;
       return aModuleNumber - bModuleNumber;
-    });
+    }).forEach(([key, value], index) => {
+      const accordionKey = `module-${level}-${key}-${index}`;
+      const isSubmodule = typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length > 0;
 
-    return sortedHierarchy.map(([key, value], index) => {
-      if (Array.isArray(value)) {
+      const moduleLessons = Array.isArray(value) ? value : flattenHierarchy(value);
+      const moduleProgress = level === 0 ? calculateModuleProgress(moduleLessons) : null;
+      const progressStatusModule = level === 0 ? calculateModuleProgressStatus(moduleLessons) : null;
+      const hasStartedLessons = level === 0 ? moduleLessons.some(lesson => watchedLessons[lesson.id] || lesson.progressStatus === 'started') : false;
+
+
+      const progressComponents = level === 0 ? (
+        <div className="flex gap-2 justify-start items-center my-4">
+          <div>
+            <p className="w-12 h-12 rounded-full bg-slate-500 text-white dark:bg-black dark:text-white flex justify-center items-center">
+              {index + 1}
+            </p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <p>{key}</p>
+            {hasStartedLessons && moduleProgress !== 100.00 ? (
+              <div className="flex gap-2 items-center">
+                <Progress fill="#22c55e" className="w-full h-1" value={moduleProgress} />
+                <span>{moduleProgress}%</span>
+              </div>
+            ) : progressStatusModule === 'completed' ? (
+              <div className="flex gap-2 items-center">
+                <CheckCircle color="#339d25" className="w-4 h-4" />
+                Completo
+              </div>
+            ) : progressStatusModule === 'not_started' || !hasStartedLessons ? (
+              <div className="flex gap-2 items-center">
+                <CheckCircle color="#cccccc" className="w-4 h-4" />
+                Não Iniciado
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : key;
+
+      if (isSubmodule) {
+        elements.push(
+          <Accordion key={accordionKey} type="single" collapsible>
+            <AccordionItem value={accordionKey}>
+              <AccordionTrigger className="hover:no-underline">
+                {progressComponents}
+              </AccordionTrigger>
+              <AccordionContent>
+                {renderHierarchy(value, level + 1)}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        );
+      } else if (Array.isArray(value)) {
         const sortedLessons = value.sort((a, b) => {
           const matchResultA = a.hierarchy_path.match(/\d+/g);
           const matchResultB = b.hierarchy_path.match(/\d+/g);
-
-          if (matchResultA && matchResultB) {
-            const aLessonNumber = parseInt(matchResultA.pop()!);
-            const bLessonNumber = parseInt(matchResultB.pop()!);
-            return aLessonNumber - bLessonNumber;
-          }
-          return 0;
+          const aLessonNumber = matchResultA ? parseInt(matchResultA[matchResultA.length - 1], 10) : 0;
+          const bLessonNumber = matchResultB ? parseInt(matchResultB[matchResultB.length - 1], 10) : 0;
+          return aLessonNumber - bLessonNumber;
         });
-
-        return sortedLessons.map((lesson) => (
+        const lessonElements = sortedLessons.map((lesson, lessonIndex) => (
           <div key={lesson.id} className={`flex justify-around items-center w-full h-16 my-6 pr-3 ${selectedLessonId === lesson.id ? 'bg-slate-700 text-white dark:bg-black dark:text-white' : ''}`}>
-            <p className="w-1/6">{index + 1}</p>
+            <p className="w-1/6">{lessonIndex + 1}</p>
             <p className="w-5/6 cursor-pointer flex flex-col" onClick={() => {
               setVideoInfo({
-                title: lesson.title, url: `/serve-video/?video_path=${encodeURIComponent(lesson.video_url)}`, videoId: lesson.id.toString(),
+                title: lesson.title,
+                url: `/serve-video/?video_path=${encodeURIComponent(lesson.video_url)}`,
+                videoId: lesson.id.toString(),
                 timeElapsed: lesson.time_elapsed?.toString() || '0',
                 progressStatus: lesson.progressStatus
               });
               setSelectedLessonId(lesson.id);
-            }}>{lesson.title} <span>{formatarDuracao(Number(lesson.duration))}</span></p>
+            }}>
+              {lesson.title} <span>{formatarDuracao(Number(lesson.duration))}</span>
+            </p>
             <div className="w-1/6">
               <Checkbox
                 checked={!!watchedLessons[lesson.id]}
@@ -411,57 +456,23 @@ export default function course() {
             </div>
           </div>
         ));
-      } else {
-        const moduleProgress = calculateModuleProgress(flattenHierarchy(value));
-        const progressStatusModule = calculateModuleProgressStatus(flattenHierarchy(value));
-        const hasStartedLessons = Object.values(value).some((moduleLessons: any) =>
-          moduleLessons.some((lesson: Lesson) => lesson.progressStatus === 'started')
-        );
 
-        console.log("Before rendering child hierarchy:", value);
-
-        const renderedHierarchy = renderHierarchy(value, level + 1);
-
-        console.log("After rendering child hierarchy:", renderedHierarchy);
-
-        return (
-          <Accordion type="single" key={`module-${level}-${index}`} collapsible>
-            <AccordionItem value={`module-${key}`}>
-              <AccordionTrigger className="hover:no-underline">{key}</AccordionTrigger>
-              <div className="flex gap-2 justify-start items-center my-4">
-                <div>
-                  <p className="w-12 h-12 rounded-full bg-slate-500 text-white dark:bg-black dark:text-white flex justify-center items-center">
-                    {index + 1}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p>{key}</p>
-                  {hasStartedLessons && moduleProgress !== 100.00 ? (
-                    <div className="flex gap-2 items-center">
-                      <Progress fill="#22c55e" className="w-full h-1" value={moduleProgress} />
-                      <span>{moduleProgress}%</span>
-                    </div>
-                  ) : progressStatusModule === 'completed' ? (
-                    <div className="flex gap-2 items-center">
-                      <CheckCircle color="#339d25" className="w-4 h-4" />
-                      Completo
-                    </div>
-                  ) : progressStatusModule === 'not_started' || !hasStartedLessons ? (
-                    <div className="flex gap-2 items-center">
-                      <CheckCircle color="#cccccc" className="w-4 h-4" />
-                      Não Iniciado
-                    </div>
-                  ) : null}
-                </div>
-              </div>
+        elements.push(
+          <Accordion className="pl-4" key={`submodule-${accordionKey}`} type="single" collapsible>
+            <AccordionItem value={accordionKey}>
+              <AccordionTrigger className="hover:no-underline">
+                {progressComponents}
+              </AccordionTrigger>
               <AccordionContent>
-                {renderedHierarchy}
+                {lessonElements}
               </AccordionContent>
             </AccordionItem>
           </Accordion>
         );
       }
     });
+
+    return elements;
   };
 
   return (
@@ -492,18 +503,21 @@ export default function course() {
                     <Separator className="my-4" />
                   </CardHeader>
                   <CardContent>
-                    {txtContent.length === 0 ? (
-                      <h3>Não há descrição em .txt</h3>
-                    ) : (
-                      <div>
-                        {txtContent.map((file, index) => (
-                          <div key={index}>
-                            <h3>{file.name}</h3>
-                            <p>{file.content}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {
+                      Object.keys(txtContent).length === 0 ? (
+                        <h3>Não há descrição em .txt ou conteúdo em .html</h3>
+                      ) : (
+                        <div>
+                          {Object.entries(txtContent).map(([_, fileContent], index) => {
+                            return (
+                              <div key={index} className="mb-5">
+                                <div dangerouslySetInnerHTML={{__html: `${fileContent}`}}></div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )
+                    }
                   </CardContent>
                 </Card>
               </TabsContent>

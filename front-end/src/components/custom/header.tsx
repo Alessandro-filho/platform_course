@@ -11,7 +11,7 @@ function Header() {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-10 p-4 mx-4 text-right bg-white dark:bg-[hsl(222.2,84%,4.9%)]">
+    <div className="relative min-h-20 p-0">
       <div className='flex justify-between items-center'>
         <div onClick={() => handleNavigate('/')} className='inline-flex flex-wrap gap-3 cursor-pointer'>
           <GraduationCap /> Let's goooo!
