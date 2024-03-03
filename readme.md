@@ -76,6 +76,15 @@ Precisamos primeiro entrar no ambiente virtual
 windows(shell/cmd) -> `venv/Scripts/Activate`
 windows(bash) / Mac -> `source venv/Scripts/Activate`
 
+3.1 Execute a aplicação:
+
+É necessario abrir outra aba no terminal para iniciar o `Vite`
+
+```shell
+cd front-end
+npm run dev
+```
+
 ## Nota
 
 Certifique-se de substituir venv pelo nome do seu ambiente virtual, caso seja diferente.
