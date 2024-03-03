@@ -10,12 +10,16 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import joinedload
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='front-end/dist', static_url_path='')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///platform_course.sqlite?cache=shared'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
 db = SQLAlchemy(app)
 CORS(app)
+
+@app.route('/')
+def serve():
+    return send_from_directory(app.static_folder, 'index.html')
 
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
