@@ -167,7 +167,7 @@ export default function lists() {
     }
 
     try {
-      const response = await fetch('/api/courses', {
+      const response = await fetch('http://localhost:5000/api/courses', {
         method: 'POST',
         body: formData,
       });
@@ -206,7 +206,7 @@ export default function lists() {
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch('/api/courses');
+      const response = await fetch('http://localhost:5000/api/courses');
       if (!response.ok) throw new Error('Falha ao buscar cursos');
 
       const data = await response.json();
@@ -227,7 +227,7 @@ export default function lists() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await fetch('/api/courses');
+        const response = await fetch('http://localhost:5000/api/courses');
         if (!response.ok) throw new Error('Falha ao buscar cursos');
 
         const data = await response.json();

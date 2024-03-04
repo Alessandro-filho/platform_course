@@ -33,7 +33,7 @@ function App() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await fetch('/api/courses');
+        const response = await fetch('http://localhost:5000/api/courses');
         if (!response.ok) throw new Error('Falha ao buscar cursos');
 
         const data = await response.json();

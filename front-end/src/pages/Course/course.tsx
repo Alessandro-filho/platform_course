@@ -97,7 +97,7 @@ export default function course() {
         isCompleted: true
       };
 
-      fetch('/api/update-lesson-progress', {
+      fetch('http://localhost:5000/api/update-lesson-progress', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -142,7 +142,7 @@ export default function course() {
       progressStatus: 'started',
     };
 
-    fetch('/api/update-lesson-progress', {
+    fetch('http://localhost:5000/api/update-lesson-progress', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -203,7 +203,7 @@ export default function course() {
         progressStatus,
       };
 
-      fetch('/api/update-lesson-progress', {
+      fetch('http://localhost:5000/api/update-lesson-progress', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -228,7 +228,7 @@ export default function course() {
           progressStatus: "started",
         };
 
-        fetch('/api/update-lesson-progress', {
+        fetch('http://localhost:5000/api/update-lesson-progress', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
