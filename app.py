@@ -51,6 +51,7 @@ class Lesson(db.Model):
     time_elapsed = db.Column(db.Text)
     duration = db.Column(db.Text, nullable=True)
 
+
 class Annotation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200))
@@ -197,7 +198,6 @@ def update_annotation(annotation_id):
     annotation.content = content
     db.session.commit()
     return jsonify({'id': annotation.id, 'content': annotation.content})
-
 
 def list_and_register_lessons(course_path, course_id):
     Lesson.query.filter_by(course_id=course_id).delete()

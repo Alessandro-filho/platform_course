@@ -18,26 +18,41 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:5000',
+        target: 'http://localhost:5000',
+        origin/main
         changeOrigin: true,
         secure: false,
       },
       '/serve-video': {
+
         target: 'http://127.0.0.1:5000',
+
+        target: 'http://localhost:5000',
+
         changeOrigin: true,
         secure: false,
       },
       '/serve-txt': {
+
         target: 'http://127.0.0.1:5000',
+
+        target: 'http://localhost:5000',
+
         changeOrigin: true,
         secure: false,
       },
       '/serve-files': {
+
         target: 'http://127.0.0.1:5000',
+
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       },
       '/uploads': {
         target: 'http://127.0.0.1:5000',
+
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       },
