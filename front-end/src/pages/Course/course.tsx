@@ -54,6 +54,9 @@ export default function course() {
   const [filesPath, setFilesPath] = useState<FileObject[]>([]);
   const [modules, setModules] = useState<Record<string, any>>({});
   const [courseName, setCourseName] = useState('');
+  const [noteTitle, setNoteTitle] = useState('');
+  const [noteContent, setNoteContent] = useState('');
+  
 
   function formatarDuracao(segundos: number) {
     const minutos = Math.floor(segundos / 60);
@@ -75,6 +78,10 @@ export default function course() {
       console.error('Falha ao buscar arquivos .txt:', error);
     }
   };
+
+  
+  
+
 
   const fetchFiles = async (url: string) => {
     try {
@@ -135,7 +142,43 @@ export default function course() {
       return updatedModules;
     });
   };
+  const createNotes = () => {
+    if (!noteTitle || !noteContent) {
+      return;
+    }
 
+    const requestData = {
+      title: noteTitle,
+      content: noteContent,
+      course_id: courseId 
+    };
+
+    fetch('/api/annotations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData),
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to save notes');
+        }
+        return response.json();
+      })
+      .then(data => {
+        
+        console.log('Notes saved successfully:', data);
+        
+        setNoteTitle('');
+        setNoteContent('');
+      })
+      .catch(error => {
+        console.error('Error saving notes:', error);
+        
+      });
+  };
+  
   const handlePlay = () => {
     const requestData = {
       lessonId: Number(videoInfo.videoId),
@@ -247,6 +290,7 @@ export default function course() {
       }
     }
   };
+
 
   const handleLinkClick = (path: string) => {
     navigator.clipboard.writeText(path)
@@ -495,6 +539,7 @@ export default function course() {
               <TabsList className="w-full">
                 <TabsTrigger value="description" className="w-1/2">Descrição</TabsTrigger>
                 <TabsTrigger value="others" className="w-1/2">Outros</TabsTrigger>
+                <TabsTrigger value="notes" className="w-1/2">Notas</TabsTrigger>
               </TabsList>
               <TabsContent value="description">
                 <Card className="mt-4">
@@ -542,6 +587,32 @@ export default function course() {
                   </CardContent>
                 </Card>
               </TabsContent>
+              <TabsContent value="notes">
+                <Card className="mt-4">
+                  <CardHeader>
+                  <CardTitle className="text-left mb-2 mr-4">Notas</CardTitle>
+                    <Separator className="my-4" />
+                  </CardHeader>
+                  <CardContent>
+                    <div>
+                      <input 
+                        type="text"
+                        placeholder="Título"
+                        value={noteTitle}
+                        onChange={(e) => setNoteTitle(e.target.value)}
+                        className="w-full mb-4 p-2 border border-gray-300 rounded-md"
+                      />
+                      <textarea
+                        placeholder="Conteúdo"
+                        value={noteContent}
+                        onChange={(e) => setNoteContent(e.target.value)}
+                        className="w-full h-32 p-2 border border-gray-300 rounded-md"
+                      />
+                      <button onClick={createNotes} className="mt-4 bg-green-500 text-white rounded-md p-2">Salvar</button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </div>
         </section>
@@ -561,5 +632,5 @@ export default function course() {
         <Toaster position="bottom-center" richColors expand={false} visibleToasts={3} />
       </div>
     </>
-  )
+  );  
 }

@@ -51,6 +51,14 @@ class Lesson(db.Model):
     time_elapsed = db.Column(db.Text)
     duration = db.Column(db.Text, nullable=True)
 
+
+class Annotation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200))
+    content = db.Column(db.Text)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+    course = db.relationship('Course', backref=db.backref('annotations', lazy=True))
+
 with app.app_context():
     db.create_all()
 
@@ -147,6 +155,49 @@ def serve_files():
     files_info = [{'name': f, 'url': os.path.join(video_dir)} for f in filtered_files]
 
     return jsonify(files_info)
+
+@app.route('/api/annotations', methods=['POST'])
+def save_annotation():
+    title = request.json.get('title')
+    content = request.json.get('content')
+    course_id = request.json.get('course_id')
+    annotation = Annotation(title=title, content=content, course_id=course_id)
+    db.session.add(annotation)
+    db.session.commit()
+    return jsonify({'title': annotation.title, 'content': annotation.content, 'course_id': annotation.course_id}), 201
+
+@app.route('/api/annotations/<int:course_id>', methods=['GET'])
+def list_annotations(course_id):
+    annotations = Annotation.query.filter_by(course_id=course_id).all()
+    if annotations:
+        annotations_list = [{'id': annotation.id, 'title': annotation.title, 'content': annotation.content} for annotation in annotations]
+        return jsonify(annotations_list)
+    else:
+        return jsonify({'message': 'Nenhuma anotação encontrada para este curso e aula'}), 404
+
+@app.route('/api/annotations', methods=['GET'])
+def list_all_annotations():
+    annotations = Annotation.query.all()
+    if annotations:
+        annotations_list = [{'id': annotation.id, 'title': annotation.title, 'content': annotation.content, 'course_id': annotation.course_id} for annotation in annotations]
+        return jsonify(annotations_list)
+    else:
+        return jsonify({'message': 'Nenhuma anotação encontrada'}), 404
+    
+@app.route('/api/annotations/<int:annotation_id>', methods=['DELETE'])
+def delete_annotation(annotation_id):
+    annotation = Annotation.query.get_or_404(annotation_id)
+    db.session.delete(annotation)
+    db.session.commit()
+    return jsonify({'message': 'Anotação deletada com sucesso'})
+
+@app.route('/api/annotations/<int:annotation_id>', methods=['PUT'])
+def update_annotation(annotation_id):
+    annotation = Annotation.query.get_or_404(annotation_id)
+    content = request.json.get('content')
+    annotation.content = content
+    db.session.commit()
+    return jsonify({'id': annotation.id, 'content': annotation.content})
 
 def list_and_register_lessons(course_path, course_id):
     Lesson.query.filter_by(course_id=course_id).delete()

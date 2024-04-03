@@ -76,4 +76,16 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  textarea {
+    background-color: var(--background); /* Aplica a cor de fundo do tema */
+    color: var(--foreground); /* Aplica a cor do texto do tema */
+    border-color: var(--border); /* Aplica a cor da borda do tema */
+ }
+ input{
+  background-color: var(--background); /* Aplica a cor de fundo do tema */
+  color: var(--foreground); /* Aplica a cor do texto do tema */
+  border-color: var(--border); /* Aplica a cor da borda do tema */
+ }
+
 }
